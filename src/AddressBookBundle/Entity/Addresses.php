@@ -1,4 +1,5 @@
-<?php
+<?php declare(strict_types=1);
+
 namespace AddressBookBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
