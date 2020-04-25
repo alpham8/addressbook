@@ -35,16 +35,5 @@ class RequestSubscriber implements EventSubscriberInterface
 
     public function onKernelRequest(FilterControllerEvent $eventArgs)
     {
-        $this->lazyInstallSchema();
-    }
-
-    /**
-     * Install or update profile table
-     */
-    private function lazyInstallSchema()
-    {
-        // TODO: check if table exists:
-        $tool = new SchemaTool($this->em);
-        $tool->updateSchema([$this->em->getClassMetadata(Addresses::class)], true);
     }
 }
