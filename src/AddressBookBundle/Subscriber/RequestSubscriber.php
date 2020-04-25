@@ -1,10 +1,5 @@
 <?php declare(strict_types=1);
-/**
- * This file is part of the blogolite Blog System.
- * Author: Thomas Georg Wunner <thomas@wunner-software.de>
- * Creation Date: 18.04.20 17:08
- * License: MIT
- */
+
 namespace AddressBookBundle\Subscriber;
 
 use AddressBookBundle\Entity\Addresses;
