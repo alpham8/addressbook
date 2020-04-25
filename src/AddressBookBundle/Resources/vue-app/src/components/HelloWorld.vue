@@ -32,7 +32,6 @@
 </template>
 
 <script lang="ts">
-const axios = require('axios').default;
 import { Component, Prop, Vue } from 'vue-property-decorator';
 
 @Component

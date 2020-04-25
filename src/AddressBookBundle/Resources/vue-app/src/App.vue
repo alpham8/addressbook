@@ -47,7 +47,7 @@
                         <label for="pdCountry">country</label>
                         <select id="pdCountry" name="pdCountry" v-model="newAdr.country" aria-describedby="pdCountryHelp">
                             <option v-for="country in countries" :value="country.isoAlpha2">
-                                {{country.isoAlpha2}}
+                                {{country.name}}
                             </option>
                         </select>
                         <small id="pdCountryHelp" class="form-text text-muted">
@@ -90,6 +90,8 @@
 </template>
 
 <script lang="ts">
+    const axios = require('axios').default;
+
     import {Component, Prop, Vue} from 'vue-property-decorator';
     import HelloWorld from './components/HelloWorld.vue';
 
@@ -98,9 +100,27 @@
             HelloWorld,
         },
     })
-    export default class App extends Vue {
+    export default class App extends Vue
+    {
         // das ! ist noetig fuer ist einfach so da ohne Konstruktor
-        @Prop() public countries!: string[] | null;
+        @Prop()
+        public countries!: {isoAlpha2: string, name: string}[] | null;
+
+        constructor()
+        {
+            super();
+            this.fillCountryList();
+        }
+
+        fillCountryList(): void
+        {
+            let me = this;
+            axios.get('/overview/getCountries')
+                .then(data: Any => {
+                    this.countries = data;
+                });
+        }
+
         onNewAddressSubmitted(eventArgs: Event): void
         {
             let frmData = eventArgs.target;
