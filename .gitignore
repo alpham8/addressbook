@@ -21,3 +21,4 @@
 /web/assets/
 node_modules/
 parameters.yml
+.user.ini

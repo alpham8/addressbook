@@ -7,7 +7,7 @@
         </div>
         <div class="row">
             <div class="col">
-                <form method="post" enctype="multipart/form-data">
+                <form method="post" enctype="multipart/form-data" v-on:submit.prevent="onNewAddressSubmitted">
                     <div class="form-group">
                         <label for="tfFirstname">first name</label>
                         <input type="text" id="tfFirstname" class="form-control" name="tfFirstname" aria-describedby="tfFirstnameHelp" />
@@ -43,15 +43,15 @@
                             Please provide here the contact's city name
                         </small>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" v-if="countries.length > 0">
                         <label for="pdCountry">country</label>
-                        <select id="pdCountry" name="pdCountry" v-model="newAdr.country" aria-describedby="pdCountryHelp">
+                        <select id="pdCountry" name="pdCountry" class="form-control" aria-describedby="pdCountryHelp">
                             <option v-for="country in countries" :value="country.isoAlpha2">
                                 {{country.name}}
                             </option>
                         </select>
                         <small id="pdCountryHelp" class="form-text text-muted">
-                            Please provide here the contact's first name
+                            Please provide the country in which the contact lives
                         </small>
                     </div>
                     <div class="form-group">
@@ -82,7 +82,7 @@
                             Please provide here the contact's picture, if any
                         </small>
                     </div>
-                    <button type="submit" class="btn btn-primary" v-on:submit.prevent="onNewAddressSubmitted">Submit</button>
+                    <button type="submit" class="btn btn-primary">Submit</button>
                 </form>
             </div>
         </div>
@@ -90,10 +90,11 @@
 </template>
 
 <script lang="ts">
-    const axios = require('axios').default;
+    // const axios = require('axios').default;
 
     import {Component, Prop, Vue} from 'vue-property-decorator';
     import HelloWorld from './components/HelloWorld.vue';
+    import axios from 'axios';
 
     @Component({
         components: {
@@ -103,8 +104,7 @@
     export default class App extends Vue
     {
         // das ! ist noetig fuer ist einfach so da ohne Konstruktor
-        @Prop()
-        public countries!: {isoAlpha2: string, name: string}[] | null;
+        public countries: {isoAlpha2: string, name: string}[] = [];
 
         constructor()
         {
@@ -115,16 +115,19 @@
         fillCountryList(): void
         {
             let me = this;
-            axios.get('/overview/getCountries')
-                .then(data: Any => {
-                    this.countries = data;
-                });
+            axios.get('/overview/getCountries').then(
+                response =>
+                {
+                    this.countries = response.data;
+                }
+            );
         }
 
-        onNewAddressSubmitted(eventArgs: Event): void
+        onNewAddressSubmitted(eventArgs: any): void
         {
-            let frmData = eventArgs.target;
-            console.log('form data:', frmData);
+            let frmData = new FormData(eventArgs.target as HTMLFormElement);
+            console.log('frmData', frmData.getAll('tfCity'));
+            // TODO: XHR POST absenden
         }
     }
 </script>
