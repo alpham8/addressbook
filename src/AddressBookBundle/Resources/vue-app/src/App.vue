@@ -7,7 +7,7 @@
         </div>
         <div class="row">
             <div class="col">
-                <form method="post" enctype="multipart/form-data" v-on:submit.prevent="onNewAddressSubmitted">
+                <form method="post" enctype="multipart/form-data" v-on:submit.prevent="onNewAddressSubmitted" accept-charset="UTF-8">
                     <div class="form-group">
                         <label for="tfFirstname">first name</label>
                         <input type="text" id="tfFirstname" class="form-control" name="tfFirstname" aria-describedby="tfFirstnameHelp" />
@@ -126,8 +126,33 @@
         onNewAddressSubmitted(eventArgs: any): void
         {
             let frmData = new FormData(eventArgs.target as HTMLFormElement);
-            console.log('frmData', frmData.getAll('tfCity'));
-            // TODO: XHR POST absenden
+            axios.post(
+                '/overview/saveContact',
+                frmData,
+                {
+                    'headers': {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                }
+            ).then((result) =>
+                {
+                    this.onSaveContactSuccess(result);
+                }
+            ).catch((error) =>
+                {
+                    this.onSaveContactError(error);
+                }
+            );
+        }
+
+        onSaveContactSuccess(result: any): void
+        {
+            console.log('xhr post success', result);
+        }
+
+        onSaveContactError(error: any): void
+        {
+            console.warn('xhr post error', error);
         }
     }
 </script>

@@ -59,6 +59,7 @@ class Addresses
      *
      * @ORM\Column(name="city", type="string", length=150)
      * @Assert\NotBlank()
+     * @Assert\Regex(pattern="^[A-Za-z]{2,}([A-Za-z]|\s)*$")
      */
     private $city;
 
@@ -76,6 +77,10 @@ class Addresses
      *
      * @ORM\Column(name="phone", type="string", length=100)
      * @Assert\NotBlank()
+     * @Assert\Regex(
+     *     pattern="\+(9[976]\d|8[987530]\d|6[987]\d|5[90]\d|42\d|3[875]\d|2[98654321]\d|9[8543210]|8[6421]|6[6543210]|5[87654321]|4[987654310]|3[9643210]|2[70]|7|1)\d{1,14}$",
+     *     message="Please provide an international phone number without \"/\", \"-\", or white spaces or any other number that isn't a number. At the start, a plus sign is required."
+     * )
      */
     private $phone;
 
@@ -101,8 +106,21 @@ class Addresses
      * @var string
      *
      * @ORM\Column(name="pictureUrl", type="string", length=255, nullable=true, unique=true)
-     * @Assert\NotBlank()
      * @Assert\Url()
+     * @Assert\Image(
+     *     minWidth="200",
+     *     minHeight="200",
+     *     maxWidth="1000",
+     *     maxHeight="1000",
+     *     allowPortrait=true,
+     *     allowLandscape=false,
+     *     minHeightMessage="A min height of 200 pixels is needed.",
+     *     minWidthMessage="A min width of 200 pixels is needed.",
+     *     maxHeightMessage="A max height of 1,000 pixels is needed.",
+     *     maxWidthMessage="A max width of 1,000 pixels is needed.",
+     *     allowLandscapeMessage="Only potrait images are allowed. Please crop your image to the needed format.",
+     *     mimeTypes={"image/png", "image/jpg", "image/jpeg", "image/webp", "image/gif"}
+     * )
      */
     private $pictureUrl;
 
