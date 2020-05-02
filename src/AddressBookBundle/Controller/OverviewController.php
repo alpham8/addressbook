@@ -115,6 +115,18 @@ class OverviewController extends Controller
                         $adrMdl->setPictureUrl($newFilename);
                     }
                 }
+
+                try {
+                    $em = $this->getDoctrine()->getManager();
+                    $em->persist($adrMdl);
+                    $em->flush();
+                } catch (\Exception $ex) {
+                    // TODO: Loggen
+                    $this->container->get('logger')->error(
+                        'OverviewController::saveContact Exception: ' . $ex->getMessage(),
+                        ['class' => __CLASS__, 'method' => __METHOD__]
+                    );
+                }
             }
         }
 
