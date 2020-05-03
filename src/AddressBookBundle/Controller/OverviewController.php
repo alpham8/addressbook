@@ -4,6 +4,7 @@ namespace AddressBookBundle\Controller;
 
 use AddressBookBundle\Entity\Addresses;
 use League\ISO3166\ISO3166;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -68,6 +69,8 @@ class OverviewController extends Controller
      */
     public function saveContact(Request $request)
     {
+        /** @var LoggerInterface $logger */
+        $logger = $this->container->get('monolog.logger');
         $data = ['success' => false, 'result' => -1];
 
 //        if ($this->checkCsrfToken($request)) {
@@ -108,6 +111,10 @@ class OverviewController extends Controller
                 } catch (\Exception $e) {
                     $data['success'] = false;
                     $data['result'] = $e->getMessage();
+                    $logger->error(
+                        'OverviewController::saveContact picture move Exception: ' . $e->getMessage(),
+                        ['class' => __CLASS__, 'methood' => __METHOD__]
+                    );
                 } finally {
                     if ($data['success']) {
                         // updates the 'pictureUrl' property to store the image file name
@@ -121,9 +128,8 @@ class OverviewController extends Controller
                     $em->persist($adrMdl);
                     $em->flush();
                 } catch (\Exception $ex) {
-                    // TODO: Loggen
-                    $this->container->get('logger')->error(
-                        'OverviewController::saveContact Exception: ' . $ex->getMessage(),
+                    $logger->error(
+                        'OverviewController::saveContact entity persist / flush Exception: ' . $ex->getMessage(),
                         ['class' => __CLASS__, 'method' => __METHOD__]
                     );
                 }
