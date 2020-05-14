@@ -9,12 +9,12 @@ cp ./app/config/parameters.yml.dist ./app/config/parameters.yml
 ```
 2. Install the database, if needed (for our example we are using sqlite which needs to be created):
 ```bash
-php bin/console doctrine:database:create
-php bin/console doctrine:schema:update --force
+php ./bin/console doctrine:database:create
+php ./bin/console doctrine:schema:update --force
 ```
 3. Clear the cache:
 ```bash
-php ./bin/console cache:clear
+php ./bin/console cache:clear --env=prod
 ```
 
 # Set up the development app
