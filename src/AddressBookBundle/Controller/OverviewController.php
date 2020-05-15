@@ -18,6 +18,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class OverviewController extends Controller
 {
@@ -45,7 +46,7 @@ class OverviewController extends Controller
      *
      * @param Request $request
      */
-    public function getCountries(Request $request)
+    public function getCountriesAction(Request $request)
     {
         $data = [];
         $countries = new ISO3166();
@@ -73,26 +74,22 @@ class OverviewController extends Controller
      *
      * @return Response
      */
-    public function saveContact(Request $request)
+    public function saveContactAction(Request $request)
     {
         /** @var LoggerInterface $logger */
         $logger = $this->container->get('logger');
-        $data = ['success' => false, 'result' => -1];
+        $data = ['success' => false, 'result' => ''];
 
         if ($this->checkCsrfToken($request)) {
+            $em = $this->getDoctrine()->getManager();
+            $repo = $em->getRepository(Addresses::class);
+            $id = intval($request->get('contactId', -1));
+
+            if ($id !== -1) {
+                $adrMdl = $repo->findOneBy(['id' => $id]);
+            }
+
             $adrMdl = new Addresses();
-            $form = $this->createFormBuilder($adrMdl)
-                ->add('firstname', TextType::class)
-                ->add('lastname', TextType::class)
-                ->add('streetNo', TextType::class)
-                ->add('zip', TextType::class)
-                ->add('city', TextType::class)
-                ->add('countryIsoAlpha2', CountryType::class)
-                ->add('phone', TextType::class)
-                ->add('birthday', TextType::class)
-                ->add('email', EmailType::class)
-                ->add('pictureUrl', FileType::class)
-                ->getForm();
             $adrMdl->setFirstname($request->get('firstname', null));
             $adrMdl->setLastname($request->get('lastname', null));
             $adrMdl->setStreetNo($request->get('streetNo', null));
@@ -100,6 +97,7 @@ class OverviewController extends Controller
             $adrMdl->setCity($request->get('city', null));
             $adrMdl->setCountryIsoAlpha2($request->get('country', null));
             $adrMdl->setPhone($request->get('phone', null));
+
             if (($birthday = $request->get('birthday', null)) !== null) {
                 $adrMdl->setBirthday(new \DateTimeImmutable($birthday));
             } else {
@@ -107,27 +105,36 @@ class OverviewController extends Controller
             }
             $adrMdl->setEmail($request->get('email', null));
 
-            if (isset($_FILES['pictureUrl'])) {
+            // check if file is set, have a size and is an image
+            if (isset(
+                $_FILES['pictureUrl']) &&
+                $_FILES['pictureUrl']['size'] > 0
+                && getimagesize($_FILES["fileToUpload"]["tmp_name"]) !== false
+            ) {
+                // delete old picture on override
+                if ($id !== -1 && !empty($adrMdl->getPictureUrl())) {
+                    unlink($adrMdl->getPictureUrl());
+                }
                 /** @var UploadedFile $picFile */
                 $picFile = new UploadedFile(
                     $_FILES['pictureUrl']['tmp_name'],
                     $_FILES['pictureUrl']['name'],
-                    $_FILES['type'],
-                    $_FILES['size'],
-                    $_FILES['error']
+                    $_FILES['pictureUrl']['type'],
+                    $_FILES['pictureUrl']['size'],
+                    $_FILES['pictureUrl']['error']
                 );
                 $originFilename = pathinfo($picFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $safeFilename = transliterator_transliterate('Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()', $originFilename);
-                $newFilename = $safeFilename.'-'.uniqid('', true).'.'.$picFile->guessExtension();
+                $safeFilename = transliterator_transliterate(
+                    'Any-Latin; Latin-ASCII; [^A-Za-z0-9_] remove; Lower()',
+                    $originFilename
+                );
+                $newFilename = $safeFilename . '-' . uniqid('', true) . '.' . $picFile->guessExtension();
                 // Move the file to the directory where brochures are stored
                 try {
                     $picFile->move(
                         $this->getParameter('kernel.project_dir') . '/web/contact_pics',
-//                        $this->getParameter('addresbook_picture_directory'),
                         $newFilename
                     );
-                    $data['success'] = true;
-                    $data['result'] = 0;
                 } catch (\Exception $e) {
                     $data['success'] = false;
                     $data['result'] = $e->getMessage();
@@ -136,37 +143,34 @@ class OverviewController extends Controller
                         ['class' => __CLASS__, 'methood' => __METHOD__]
                     );
                 } finally {
+                    $router = $this->container->get('router');
                     if ($data['success']) {
                         // updates the 'pictureUrl' property to store the image file name
                         // instead of its contents
-                        $adrMdl->setPictureUrl($newFilename);
+                        $adrMdl->setPictureUrl(
+                            $router->generate('addressbook.overview.index', [], UrlGeneratorInterface::ABSOLUTE_URL)
+                            . 'contact_pics/' . $newFilename
+                        );
                     }
                 }
+            }
 
-                try {
-                    $em = $this->getDoctrine()->getManager();
-                    $em->persist($adrMdl);
-                    $em->flush();
-                } catch (\Exception $ex) {
-                    $logger->error(
-                        'OverviewController::saveContact entity persist / flush Exception: ' . $ex->getMessage(),
-                        ['class' => __CLASS__, 'method' => __METHOD__]
-                    );
+            try {
+                $em->persist($adrMdl);
+                $em->flush();
+                if (empty($data['result'])) {
+                    $data['success'] = true;
+                    $data['result'] = '';
                 }
+            } catch (\Exception $ex) {
+                $logger->error(
+                    'OverviewController::saveContact entity persist / flush Exception: ' . $ex->getMessage(),
+                    ['class' => __CLASS__, 'method' => __METHOD__]
+                );
+                $data['success'] = false;
+                $data['result'] = $ex->getMessage();
             }
         }
-
-//        $adrMdl = new Addresses();
-
-//        $form->handleRequest($request);
-//        var_dump($form->isSubmitted());
-//        var_dump($form->isValid());
-//        var_dump($form->isSubmitted() && $form->isValid());
-//        die('test');
-
-//        if ($form->isSubmitted() && $form->isValid()) {
-//
-//        }
 
         return new JsonResponse($data);
     }
@@ -189,21 +193,19 @@ class OverviewController extends Controller
         $contacts = [];
         $page = intval($request->get('page', 1));
         $em = $this->container->get('doctrine.orm.entity_manager');
-        $em = $this->container->get('doctrine.orm.entity_manager');
         /** @var AddressesRepository $repo */
         $repo = $em->getRepository(Addresses::class);
         $pagesCnt = $repo->getContactListPageCount();
-        var_dump($pagesCnt);die('test');
 
         if ($pagesCnt >= $page) {
             $countries = new ISO3166();
             $contacts = $repo->getContactListQuery($page)->getResult(AbstractQuery::HYDRATE_ARRAY);
-            var_dump($contacts);die('test');
 
             foreach ($contacts as $key => $contact) {
                 foreach ($countries as $country) {
                     if ($contact['countryIsoAlpha2'] === $country[ISO3166::KEY_ALPHA2]) {
                         $contacts[$key]['country'] = $country[ISO3166::KEY_NAME];
+                        $contacts[$key]['birthday'] = $contact['birthday']->format('Y-m-d');
                         break;
                     }
                 }
@@ -215,6 +217,42 @@ class OverviewController extends Controller
                 'contacts' => $contacts
             ]
         );
+    }
+
+    /**
+     * @Route(
+     *     "/overview/deleteContact",
+     *     name="addressbook.overview.delete_contact",
+     *     options={"seo"="false"},
+     *     methods={"POST", "PUT"},
+     *     defaults={"csrf_protected"=false, "XmlHttpRequest"=true}
+     * )
+     *
+     * @param Request $request
+     *
+     * @return Response
+     */
+    public function deleteContactAction(Request $request)
+    {
+        $data = ['success' => false, 'result' => ''];
+
+        $logger = $this->container->get('logger');
+        $em = $this->container->get('doctrine.orm.entity_manager');
+        /** @var AddressesRepository $repo */
+        $repo = $em->getRepository(Addresses::class);
+        try {
+            $repo->deleteContact(intval($request->get('id', 0)));
+            $data['success'] = true;
+        } catch (\Exception $ex) {
+            $data['success'] = false;
+            $data['result'] = $ex->getMessage();
+            $logger->error(
+                'OverviewController::saveContact picture move Exception: ' . $ex->getMessage(),
+                ['class' => __CLASS__, 'methood' => __METHOD__]
+            );
+        }
+
+        return new JsonResponse($data);
     }
 
     /**

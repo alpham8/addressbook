@@ -19,6 +19,7 @@
 /vendor/
 /web/bundles/
 /web/assets/
+/web/contact_pics/
 node_modules/
 parameters.yml
 .user.ini
