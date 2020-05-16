@@ -325,6 +325,11 @@
         {
             let me = this;
 
+            // TypeScript workaround for some strange reason:
+            if (typeof this.page === 'undefined') {
+                this.page = 1;
+            }
+
             axios.get('/overview/getList?page=' + this.page).then(
                 response =>
                 {
@@ -379,9 +384,6 @@
             this.page--;
             this.renderContactList();
             this.renderPagination();
-            console.log('prev page >= pageCount', this.page >= this.pageCount);
-            console.log('prev page', this.page);
-            console.log('prev pageCount', this.pageCount);
         }
 
         onNextPageLinkClicked(eventArgs: Event): void
@@ -474,14 +476,12 @@
                 this.renderContactList();
                 this.renderPagination();
             } else {
-                console.log('im success leiter weiter nacht delete error');
                 this.onAfterDeleteContactError(result)
             }
         }
 
         onAfterDeleteContactError(result: any): void
         {
-            console.log('bin drin im error delete result', result.data.result);
             this.resetContactMdl();
             this.showConfirmModal = false;
             this.modalErrorMsg = result.data.result;
@@ -506,14 +506,3 @@
         }
     }
 </script>
-
-<style>
-    #app {
-        font-family: Avenir, Helvetica, Arial, sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        text-align: center;
-        color: #2c3e50;
-        margin-top: 60px;
-    }
-</style>
